@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Portrait Prompt Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF2F6; --card:#FFFFFF; --ink:#14213D; --muted:#5A6883; --line:#C3CDDA;
+  --blue:#2F5D8C; --marker:#F2C230; --marker-ink:#14213D;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --paper:#0F1726; --card:#16223A; --ink:#E6ECF5; --muted:#93A3BF; --line:#2A3854; --blue:#7FA8D6; }
+}
+:root[data-theme="dark"]{ --paper:#0F1726; --card:#16223A; --ink:#E6ECF5; --muted:#93A3BF; --line:#2A3854; --blue:#7FA8D6; }
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Familjen Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+header{display:grid;gap:10px;margin-bottom:28px;max-width:720px}
+h1{font-size:clamp(30px,5vw,48px);line-height:1.05;margin:0;font-weight:700;letter-spacing:-.02em}
+header p{margin:0;color:var(--muted);font-size:17px;max-width:60ch}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:28px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:20px;display:grid;gap:18px}
+@media(min-width:901px){.panel{position:sticky;top:16px}}
+label,.lbl{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.hint{font-size:13px;color:var(--muted);margin-top:4px}
+select,input[type=text],textarea{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+textarea{min-height:76px;resize:vertical}
+select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.swatches{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.sw{width:26px;height:26px;border-radius:50%;border:1px solid var(--line)}
+.toggle{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.toggle input{margin-top:4px;width:18px;height:18px;accent-color:var(--blue)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.chip{font:inherit;font-size:14px;font-weight:500;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;min-height:38px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.spacer{flex:1}
+.btn{font:inherit;font-weight:600;font-size:14px;padding:9px 16px;border-radius:4px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;min-height:40px}
+.btn.primary{background:var(--marker);border-color:var(--marker);color:var(--marker-ink)}
+.btn:hover{filter:brightness(.96)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.style{position:relative;text-align:left;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-left-width:6px;border-radius:4px;padding:14px 14px 14px 16px;cursor:pointer;display:grid;gap:4px;min-height:112px}
+.style h3{margin:0;font-size:16px;font-weight:600;line-height:1.25;padding-right:26px}
+.style p{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
+.style .best{font-size:12px;color:var(--blue);font-weight:600}
+.style[aria-pressed=true]{outline:3px solid var(--marker);outline-offset:-1px;background:color-mix(in srgb,var(--marker) 12%,var(--card))}
+.style[aria-pressed=true]::after{content:"✓";position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:var(--marker);color:var(--marker-ink);font-weight:700;font-size:13px;display:grid;place-items:center}
+.c-Board{border-left-color:#C4A03A}.c-Studio{border-left-color:#2F5D8C}.c-Model{border-left-color:#3E8E6B}.c-Site{border-left-color:#C77D2E}
+.c-Lifestyle{border-left-color:#8A5FB0}.c-Editorial{border-left-color:#B0475F}.c-Print{border-left-color:#5A6883}
+
+.out{margin-top:36px;display:grid;gap:14px}
+.out h2{font-size:24px;margin:0;letter-spacing:-.01em}
+.empty{border:1.5px dashed var(--line);border-radius:6px;padding:28px;color:var(--muted)}
+.result{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.result header{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0;padding:12px 16px;border-bottom:1px solid var(--line);max-width:none}
+.result header strong{font-size:16px}
+.result pre{margin:0;padding:16px;white-space:pre-wrap;word-wrap:break-word;font-family:"Newsreader",Georgia,serif;font-size:16.5px;line-height:1.55;max-width:100%}
+.result pre b{font-family:"Familjen Grotesk",system-ui,sans-serif;font-weight:700;font-size:13px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:4px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+fieldset{border:1px solid var(--line);border-radius:4px;padding:12px;margin:0;display:grid;gap:12px;min-width:0;transition:opacity .15s}
+legend{font-weight:700;font-size:14px;padding:0 6px}
+fieldset.off{opacity:.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Portrait prompts for your team</h1>
+    <p>Pumili ng estilo, i-set ang body pose at damit, tapos i-copy ang prompt. I-paste sa ChatGPT o Gemini kasama ang reference photo ng teammate mo.</p>
+  </header>
+
+  <div class="layout">
+    <aside class="panel" aria-label="Settings">
+      <div>
+        <label for="role">Who is in the photo</label>
+        <select id="role"></select>
+        <div class="hint">Red = teammates. Royal blue polo = team leader.</div>
+      </div>
+      <div>
+        <label for="frame">Body pose</label>
+        <select id="frame"></select>
+        <div class="hint">Half body = ulo hanggang bewang. Full body = buong katawan, kita pati sapatos.</div>
+      </div>
+      <div>
+        <label for="attire" id="attireLbl">Upper garment (laging red)</label>
+        <select id="attire"></select>
+        <div class="hint" id="attireHint">"Best for style" = ang bagay na red top per estilo.</div>
+      </div>
+      <div>
+        <label for="blazerColor">Blazer / coat color</label>
+        <select id="blazerColor"></select>
+        <div class="hint">Para sa may blazer lang. Kahit anong kulay basta bagay sa red.</div>
+      </div>
+      <fieldset id="fsLeader">
+        <legend>Leader (blue polo): pants / shorts + shoes</legend>
+        <div>
+          <label for="bottomsL">Pants / shorts</label>
+          <select id="bottomsL"></select>
+        </div>
+        <div>
+          <label for="shoesL">Shoes</label>
+          <select id="shoesL"></select>
+          <div class="hint" id="hintL"></div>
+        </div>
+      </fieldset>
+      <fieldset id="fsTeam">
+        <legend>Teammates (red shirt): pants / shorts + shoes</legend>
+        <div>
+          <label for="bottomsT">Pants / shorts</label>
+          <select id="bottomsT"></select>
+        </div>
+        <div>
+          <label for="shoesT">Shoes</label>
+          <select id="shoesT"></select>
+          <div class="hint" id="hintT"></div>
+        </div>
+      </fieldset>
+      <div>
+        <label for="ratio">Size / aspect ratio</label>
+        <select id="ratio"></select>
+      </div>
+      <div>
+        <label for="signText">Text on the board / banner (optional)</label>
+        <textarea id="signText" placeholder="e.g. RESIDENTIAL LOT FOR SALE&#10;Project name, Phase&#10;Price range"></textarea>
+        <div class="hint">Para sa Board &amp; banner styles. Mas exact kung i-attach mo rin ang larawan ng board. Kung mali ang spelling ng AI, ayusin sa Canva.</div>
+      </div>
+      <div>
+        <label for="notes">Extra notes (optional)</label>
+        <textarea id="notes" placeholder="e.g. wears eyeglasses, hijab, backdrop color: navy blue"></textarea>
+      </div>
+      <label class="toggle"><input type="checkbox" id="space"><span>Mag-iwan ng space sa baba at kanang-taas para sa footer bar at logo ng template</span></label>
+    </aside>
+
+    <main>
+      <div class="toolbar" id="filters" role="group" aria-label="Filter by category"></div>
+      <div class="toolbar">
+        <span id="count" class="hint" style="margin:0"></span>
+        <span class="spacer"></span>
+        <button class="btn" id="selVisible">Select shown</button>
+        <button class="btn" id="clearAll">Clear</button>
+      </div>
+      <div class="grid" id="grid"></div>
+
+      <section class="out" aria-live="polite">
+        <div class="toolbar" style="margin:0">
+          <h2>Your prompts</h2>
+          <span class="spacer"></span>
+          <button class="btn primary" id="copyAll">Copy all</button>
+        </div>
+        <div id="results"></div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const FRAMES = [
+  {id:"half", name:"Half body", text:"half-body framing, from the head down to about the waist"},
+  {id:"full", name:"Full body", text:"full-body framing, head to toe fully visible including shoes, the whole outfit in frame"}
+];
+const ROLES = {
+  team:{name:"Teammate (red top)", rule:"solid red", avoid:"red", blazerAuto:"in a color that pairs well with red, such as black, charcoal, navy or cream"},
+  leader:{name:"Team leader (royal blue polo)", rule:"royal blue (a zip-collar polo with white piping)", avoid:"royal blue", blazerAuto:"in a color that pairs well with royal blue, such as charcoal, light gray, white or cream"}
+};
+const ATTIRE_TEAM = [
+  {id:"auto", name:"Best for style"},
+  {id:"polo", name:"Red polo shirt"},
+  {id:"tee", name:"Red shirt (t-shirt)"},
+  {id:"long", name:"Red long sleeve"},
+  {id:"blazer", name:"Red shirt + blazer / coat"}
+];
+const ATTIRE_LEADER = [
+  {id:"auto", name:"Best for style"},
+  {id:"polo", name:"Royal blue polo"},
+  {id:"blazer", name:"Royal blue polo + blazer / coat"}
+];
+const LEADER_POLO = "a well-fitted royal blue zip-collar polo shirt with white piping along the collar, sleeve cuffs and side seams, and a small white emblem on the left chest";
+const BLAZERS = [
+  {id:"auto", name:"Auto (best match for the shirt)", auto:true},
+  {id:"black", name:"Black", text:"black"},
+  {id:"charcoal", name:"Charcoal gray", text:"charcoal gray"},
+  {id:"navy", name:"Navy blue", text:"navy blue"},
+  {id:"lgray", name:"Light gray", text:"light gray"},
+  {id:"white", name:"White", text:"white"},
+  {id:"cream", name:"Cream / beige", text:"cream beige"}
+];
+const RATIOS = [
+  {id:"4:5", name:"4:5 — Facebook feed post"},
+  {id:"1:1", name:"1:1 — Square post / profile"},
+  {id:"9:16", name:"9:16 — Reels / Stories"},
+  {id:"3:4", name:"3:4 — Portrait"},
+  {id:"16:9", name:"16:9 — Cover banner / video thumbnail"}
+];
+const OUTFITS = {
+  leader:{
+    bottoms:[
+      {g:"Pants", id:"charcoal", name:"Charcoal jeans", text:"slim-fit dark charcoal jeans", shoe:"white"},
+      {g:"Pants", id:"black", name:"Black pants", text:"tailored slim black pants", shoe:"white"},
+      {g:"Pants", id:"navy", name:"Navy chinos", text:"navy chinos", shoe:"white"},
+      {g:"Pants", id:"khaki", name:"Khaki chinos", text:"khaki chinos", shoe:"white"},
+      {g:"Pants", id:"lgray", name:"Light gray pants", text:"light gray slim pants", shoe:"whitemin"},
+      {g:"Pants", id:"stone", name:"Stone beige chinos", text:"stone beige chinos", shoe:"whitemin"},
+      {g:"Shorts", id:"s-black", name:"Black shorts", text:"black chino shorts, knee-length", shoe:"white"},
+      {g:"Shorts", id:"s-dgray", name:"Dark gray shorts", text:"dark gray chino shorts", shoe:"white"},
+      {g:"Shorts", id:"s-khaki", name:"Khaki shorts", text:"khaki chino shorts", shoe:"white"},
+      {g:"Shorts", id:"s-stone", name:"Stone beige shorts", text:"stone beige chino shorts", shoe:"whitemin"}
+    ],
+    shoes:[
+      {id:"white", name:"White sneakers", text:"clean white sneakers"},
+      {id:"whitemin", name:"White minimalist sneakers", text:"clean white minimalist sneakers"},
+      {id:"blackleather", name:"Black leather shoes", text:"polished black leather shoes"},
+      {id:"loafers", name:"Black loafers", text:"black loafers"},
+      {id:"brown", name:"Brown sneakers", text:"brown leather sneakers"}
+    ],
+    pairs:{charcoal:"white sneakers or black leather shoes", black:"white sneakers or black loafers", navy:"white sneakers", khaki:"white or brown sneakers", lgray:"white minimalist sneakers", stone:"white minimalist sneakers (light & polished)",
+      "s-black":"white sneakers (most versatile)","s-dgray":"white sneakers (sporty & clean)","s-khaki":"white or brown sneakers","s-stone":"white minimalist sneakers"},
+    auto:"Auto: charcoal jeans + white sneakers para sa studio at office looks, khaki chinos + white sneakers para sa property tours at board."
+  },
+  team:{
+    bottoms:[
+      {g:"Pants", id:"charcoal", name:"Charcoal gray (best overall)", text:"slim charcoal gray pants", shoe:"whitemin"},
+      {g:"Pants", id:"black", name:"Black", text:"tailored slim black pants", shoe:"white"},
+      {g:"Pants", id:"navy", name:"Navy blue", text:"navy blue slim pants", shoe:"whiteleather"},
+      {g:"Pants", id:"khaki", name:"Beige / khaki", text:"beige khaki slim pants", shoe:"white"},
+      {g:"Pants", id:"white", name:"White", text:"fresh white slim pants", shoe:"white"},
+      {g:"Pants", id:"olive", name:"Olive green", text:"olive green slim pants", shoe:"white"},
+      {g:"Shorts", id:"s-black", name:"Black chino shorts", text:"black chino shorts", shoe:"white"},
+      {g:"Shorts", id:"s-charcoal", name:"Charcoal shorts", text:"charcoal gray shorts", shoe:"white"},
+      {g:"Shorts", id:"s-beige", name:"Beige shorts", text:"beige shorts", shoe:"white"},
+      {g:"Shorts", id:"s-white", name:"White tailored shorts", text:"white tailored shorts", shoe:"white"}
+    ],
+    shoes:[
+      {id:"white", name:"White sneakers", text:"clean white sneakers"},
+      {id:"whitemin", name:"White minimalist sneakers", text:"clean white minimalist sneakers"},
+      {id:"whiteleather", name:"White leather sneakers", text:"white leather sneakers"},
+      {id:"blacksneakers", name:"Black sneakers", text:"black sneakers"},
+      {id:"loafers", name:"Black loafers", text:"black loafers"},
+      {id:"tanloafers", name:"Tan loafers", text:"tan loafers"},
+      {id:"tanshoes", name:"Tan shoes", text:"tan shoes"},
+      {id:"blackheels", name:"Black heels", text:"black heels"},
+      {id:"nudeheels", name:"Nude heels", text:"nude heels"},
+      {id:"nudeflats", name:"Nude flats", text:"nude flats"},
+      {id:"nudesandals", name:"Nude sandals", text:"nude sandals"}
+    ],
+    pairs:{charcoal:"white minimalist sneakers or black loafers", black:"white sneakers, black loafers or black heels", navy:"white leather sneakers or nude flats", khaki:"white sneakers, tan loafers or nude sandals", white:"white sneakers or nude heels", olive:"white sneakers or tan shoes",
+      "s-black":"white sneakers","s-charcoal":"white or black sneakers","s-beige":"white sneakers or tan sandals","s-white":"white sneakers or nude flats"},
+    auto:"Auto: charcoal gray + white minimalist sneakers (best overall), black pants + white sneakers para sa property tours at board, black pants + black loafers para sa client meetings."
+  }
+};
+const SIGNS = {
+  board:{noun:"sign board", d:"a large real estate sign board mounted on two dark wooden posts, with cream panels, a navy blue center band and gold trim"},
+  rollup:{noun:"roll-up banner", d:"a tall roll-up standee banner with a cream and navy blue design and gold trim"},
+  banner:{noun:"vinyl banner", d:"a wide horizontal vinyl banner with a cream and navy blue design and gold trim"}
+};
+const LOT = "a grassy residential lot inside a modern Philippine subdivision, with two-storey houses, leafy trees and a bright blue sky with white clouds behind, and {SIGN}";
+const BOARD_LIGHT = "bright midday tropical sunlight, vivid blue sky, soft natural shadows; 35mm lens, f/5.6, both the person and the sign sharp and fully readable";
+
+const STYLES = [
+  /* Board & banner */
+  {id:"board-cross",cat:"Board",name:"Arms Crossed Beside the Sign",blurb:"Standing next to the board, arms crossed, sign fully readable.",best:"Best at Full body",sign:"board",at:"polo",
+   scene:LOT,pose:"standing on the left side of the sign, upright posture, arms crossed, confident smile, the sign large and fully readable on the right",light:BOARD_LIGHT},
+  {id:"board-hand",cat:"Board",name:"Hand on Board, Hand on Hip",blurb:"One hand on the board's edge, one on the hip.",best:"Best at Full body",sign:"board",at:"polo",
+   scene:LOT,pose:"standing on the right side of the sign, one hand resting on the sign's edge, the other hand on the hip, weight on one leg, slight hip tilt, warm smile",light:BOARD_LIGHT},
+  {id:"board-lean",cat:"Board",name:"Leaning on the Sign Post",blurb:"Shoulder against the post, legs crossed, relaxed and friendly.",best:"Best at Full body",sign:"board",at:"polo",
+   scene:LOT,pose:"leaning one shoulder against the sign post, arms crossed, legs crossed at the ankles, relaxed confident smile",light:BOARD_LIGHT},
+  {id:"board-present",cat:"Board",name:"Presenting the Sign (Open Palm)",blurb:"Hand on hip, other arm extended toward the board.",best:"Best at Full body",sign:"board",at:"polo",
+   scene:LOT,pose:"standing beside the sign with one hand on the hip and the other arm extended, open palm presenting the sign, cheerful smile looking at camera",light:BOARD_LIGHT},
+  {id:"board-close",cat:"Board",name:"Close-Up Presenting",blurb:"Big in the foreground, palm raised toward the board.",best:"Best at Half body",sign:"board",at:"polo",
+   scene:LOT,pose:"in the foreground on the right side of the frame, one hand raised with an open palm toward the sign as if presenting it, big friendly smile, the sign large behind",light:"bright midday tropical sunlight, vivid blue sky; 50mm lens, f/4, the person sharp and the sign slightly softer but still readable"},
+  {id:"board-point",cat:"Board",name:"Pointing at the Sign",blurb:"Index finger pointing at the board, eyes on camera.",sign:"board",at:"polo",
+   scene:LOT,pose:"standing beside the sign, one arm extended with the index finger pointing at the sign, the other hand on the hip, looking at camera with a smile",light:BOARD_LIGHT},
+  {id:"board-tada",cat:"Board",name:"Both Hands Presenting",blurb:"Ta-da pose: both hands open toward the board.",sign:"board",at:"long",
+   scene:LOT,pose:"standing beside the sign, both arms open with palms up toward the sign in a presenting 'ta-da' gesture, bright excited smile",light:BOARD_LIGHT},
+  {id:"board-walk",cat:"Board",name:"Walking Past the Sign",blurb:"Candid mid-stride with the board in the background.",sign:"board",at:"tee",
+   scene:LOT,pose:"walking past the sign toward the camera, candid mid-stride, natural arm swing, looking at camera with a smile, the sign visible behind",light:BOARD_LIGHT},
+  {id:"board-rollup",cat:"Board",name:"Beside a Roll-Up Banner",blurb:"Standee banner for sales gallery or events.",best:"Best at Full body",sign:"rollup",at:"blazer",
+   scene:"the entrance area of a modern model house sales gallery with clean tiles, plants and soft daylight, and {SIGN}",pose:"standing beside the banner, one hand resting on top of the stand, other arm relaxed, friendly smile",light:"soft bright daylight, clean look; 35mm lens, f/4, banner fully readable"},
+  {id:"banner-hold",cat:"Board",name:"Holding a Banner",blurb:"Both hands holding a wide banner facing the camera.",sign:"banner",at:"polo",
+   scene:"a bright, tidy outdoor area in front of a modern model house with a neat lawn, holding {SIGN}",pose:"holding the banner with both hands at chest to waist level, the banner facing the camera and fully readable, big warm smile",light:"bright natural daylight; 35mm lens, f/4, banner flat and sharp"},
+
+  /* Studio */
+  {id:"studio-gray",cat:"Studio",name:"Classic Studio Headshot",blurb:"Seamless gray backdrop, the safe LinkedIn-style choice.",at:"blazer",
+   scene:"a seamless mid-gray studio backdrop with a soft light-to-dark gradient, no props",
+   pose:"shoulders angled about 30 degrees, chin slightly forward, warm confident smile looking at camera",
+   light:"large softbox key light at 45 degrees, soft fill, subtle rim light; 85mm lens, f/2.8, sharp eyes"},
+  {id:"studio-white",cat:"Studio",name:"Bright White Studio",blurb:"High-key, clean and modern. Good for profile photos.",at:"polo",
+   scene:"a clean high-key white studio background, bright and airy",
+   pose:"relaxed straight posture, friendly natural smile",
+   light:"bright even beauty lighting with gentle shadows; 85mm lens, f/4"},
+  {id:"studio-color",cat:"Studio",name:"Solid Color Backdrop",blurb:"Solid-color backdrop for consistent posts. Name the color in Extra notes.",at:"long",
+   scene:"a smooth solid studio backdrop in a rich deep navy blue (or the color given in the extra details) with a soft vignette",
+   pose:"confident stance, slight head tilt, genuine smile",
+   light:"soft key light with a clean rim light separating the subject from the backdrop; 85mm lens, f/2.8"},
+  {id:"studio-dark",cat:"Studio",name:"Dark Luxury Portrait",blurb:"Low-key moody look for premium or investor-facing projects.",at:"blazer",
+   scene:"a deep charcoal studio backdrop with a faint warm glow behind the subject",
+   pose:"arms relaxed or crossed, calm assured expression with a slight smile",
+   light:"low-key cinematic lighting, warm gold rim light on the shoulders and hair, dramatic but flattering; 85mm lens, f/2"},
+
+  /* Model house */
+  {id:"model-porch",cat:"Model",name:"Model House Front Porch",blurb:"Standing at the entrance of a modern Filipino model house.",at:"polo",
+   scene:"the front porch of a modern two-storey Filipino model house with clean white and wood-accent facade, tidy landscaping, and a welcoming front door",
+   pose:"relaxed standing pose, one hand lightly in pocket or on the railing, warm smile",
+   light:"soft natural daylight, gentle shade, slightly blurred background; 50mm lens, f/2.8"},
+  {id:"model-living",cat:"Model",name:"Living Room Model Unit",blurb:"Styled living room, neutral tones, bright and homey.",at:"long",
+   scene:"a bright, tastefully staged living room in a model unit with a neutral sofa, wooden coffee table, indoor plants and large windows",
+   pose:"standing beside the sofa or sitting on its arm, open and friendly posture, smiling at camera",
+   light:"soft window light with warm interior fill; 35mm lens, f/2.8, background gently blurred"},
+  {id:"model-kitchen",cat:"Model",name:"Modern Kitchen Island",blurb:"Leaning on a kitchen island, great for family-home ads.",at:"long",
+   scene:"a modern model-home kitchen with a white quartz island, pendant lights, light-wood cabinets and a fruit bowl",
+   pose:"leaning casually on the island with both forearms, approachable smile",
+   light:"bright natural light from a nearby window, clean airy feel; 35mm lens, f/3.2"},
+  {id:"model-stairs",cat:"Model",name:"Staircase & Entryway",blurb:"Elegant foyer with a staircase behind the subject.",at:"blazer",
+   scene:"a bright entryway of a model house with a wooden staircase, white walls, a console table and a small vase of greenery",
+   pose:"standing near the foot of the stairs, one hand on the railing, upright confident posture",
+   light:"soft diffused daylight with warm accent lights; 35mm lens, f/2.8"},
+  {id:"model-door",cat:"Model",name:"Open House Welcome",blurb:"Gesturing you inside the front door, inviting energy.",at:"polo",
+   scene:"the open front door of a model house with a warm, softly lit interior visible behind",
+   pose:"standing at the doorway, one arm extended in a welcoming 'come in' gesture, big genuine smile",
+   light:"soft daylight on the subject with warm interior glow behind; 35mm lens, f/2.8"},
+
+  /* On-site */
+  {id:"site-gate",cat:"Site",name:"Subdivision Entrance Gate",blurb:"In front of the community gate and landscaped entrance.",at:"polo",
+   scene:"the landscaped entrance gate of a modern Philippine residential subdivision, with a clean arch, guardhouse, palm trees and a paved driveway (no readable signage)",
+   pose:"standing tall and relaxed, arms crossed or one hand in pocket, confident smile",
+   light:"bright tropical daylight, soft shadows, slightly blurred background; 35mm lens, f/4"},
+  {id:"site-clubhouse",cat:"Site",name:"Clubhouse & Amenities",blurb:"Clubhouse or park backdrop that sells the lifestyle.",at:"tee",
+   scene:"a modern subdivision clubhouse with a landscaped park, a small plaza and lush greenery in the background",
+   pose:"standing relaxed, mid-stride or leaning slightly, warm laughing smile",
+   light:"soft late-morning daylight; 50mm lens, f/2.8, creamy bokeh"},
+  {id:"site-hardhat",cat:"Site",name:"Construction Progress",blurb:"Hard hat on site. Shows the project is really being built.",at:"polo",
+   scene:"a residential construction site with a house frame under construction in the blurred background, clean and organized, blue sky",
+   pose:"wearing a white hard hat, standing confidently holding a rolled blueprint, subtle proud smile (no vest covering the shirt)",
+   light:"bright natural daylight, crisp and realistic; 35mm lens, f/4"},
+  {id:"site-golden",cat:"Site",name:"Golden Hour Exterior",blurb:"Warm sunset light with a row of modern houses behind.",at:"long",
+   scene:"a row of modern Filipino townhouses and single-detached houses on a clean street during golden hour, palm trees, warm sky",
+   pose:"relaxed standing pose, gentle smile, looking slightly off-camera then toward camera",
+   light:"warm golden hour backlight with soft rim glow on hair and shoulders; 85mm lens, f/2.2, beautiful bokeh"},
+  {id:"site-balcony",cat:"Site",name:"Balcony / Rooftop View",blurb:"Overlooking the neighborhood with hills or skyline behind.",at:"blazer",
+   scene:"a balcony or rooftop terrace overlooking a green residential neighborhood with distant hills and a soft sky",
+   pose:"leaning on the railing with one arm, looking at camera, calm confident smile",
+   light:"soft open-shade daylight, airy atmosphere; 50mm lens, f/2.8"},
+
+  /* Lifestyle */
+  {id:"life-keys",cat:"Lifestyle",name:"Handing Over the Keys",blurb:"Hand extended with house keys toward the camera.",at:"polo",
+   scene:"a bright neutral home interior, softly blurred",
+   pose:"holding out a set of house keys with a small house-shaped keychain toward the camera, keys in shallow focus in the foreground, big warm smile",
+   light:"soft natural window light; 50mm lens, f/2, shallow depth of field"},
+  {id:"life-sold",cat:"Lifestyle",name:"Sold! Celebration",blurb:"Holding a SOLD sign, great for turnover and closing posts.",at:"polo",
+   scene:"the front lawn or driveway of a modern house with a tidy facade",
+   pose:"holding a red 'SOLD' real estate rider sign beside a for-sale post, joyful excited smile, energetic pose",
+   light:"bright cheerful daylight; 35mm lens, f/4"},
+  {id:"life-desk",cat:"Lifestyle",name:"Consultation Desk",blurb:"At the desk with laptop, brochure and house scale model.",at:"blazer",
+   scene:"a bright sales-gallery desk with a laptop, a printed brochure, and a small architectural scale model of a house",
+   pose:"seated, hands clasped or pointing to the brochure, looking up at camera with a helpful smile",
+   light:"soft office lighting with window fill; 50mm lens, f/2.8"},
+  {id:"life-signing",cat:"Lifestyle",name:"Contract Signing Table",blurb:"Pen and reservation form ready, closing-day feel.",at:"blazer",
+   scene:"a clean wooden signing table in a sales office with a reservation form, a pen and a small potted plant",
+   pose:"seated, holding a pen out toward the camera, friendly professional smile",
+   light:"soft diffused light, clean and trustworthy look; 50mm lens, f/2.5"},
+  {id:"life-walk",cat:"Lifestyle",name:"Neighborhood Walk Candid",blurb:"Natural, mid-walk moment on a tree-lined street.",at:"tee",
+   scene:"a quiet tree-lined residential street in a modern subdivision with sidewalks and blurred houses",
+   pose:"walking toward the camera, candid mid-laugh, natural arm swing",
+   light:"soft daylight filtering through trees; 85mm lens, f/2.2, subtle motion feel"},
+  {id:"life-casual",cat:"Lifestyle",name:"Weekend Approachable",blurb:"Relaxed arms-crossed pose in a garden. Friendly, not salesy.",at:"polo",
+   scene:"the small landscaped garden beside a model house, soft green background",
+   pose:"standing with arms crossed, relaxed shoulders, warm natural smile",
+   light:"soft overcast daylight with pleasant bokeh; 85mm lens, f/2.5"},
+
+  /* Editorial */
+  {id:"edit-magazine",cat:"Editorial",name:"Editorial Magazine Style",blurb:"Architectural interior with a fashion-magazine feel.",at:"blazer",
+   scene:"a minimalist architectural interior with clean lines, concrete and wood textures, and a large window",
+   pose:"leaning against a wall, one hand in pocket, composed editorial gaze at camera",
+   light:"directional window light with soft contrast, refined color grade; 85mm lens, f/2"},
+  {id:"edit-formal",cat:"Editorial",name:"Formal Event Look",blurb:"Elegant warm interior for launches, awards and anniversaries.",at:"blazer",
+   scene:"a warm interior with wood paneling, soft ambient lights and tasteful decor",
+   pose:"dignified and warm, slight smile, hands relaxed",
+   light:"soft warm lighting with gentle depth; 85mm lens, f/2.5"},
+  {id:"edit-pool",cat:"Editorial",name:"Resort-Style Pool & Garden",blurb:"Poolside amenity shot with tropical greenery.",at:"tee",
+   scene:"a resort-style residential clubhouse pool area with loungers, tropical plants and clear blue water",
+   pose:"standing near the pool edge, relaxed posture, bright easy smile",
+   light:"bright tropical sunlight, vibrant but natural colors; 35mm lens, f/4"},
+
+  /* Print & group */
+  {id:"print-tarp",cat:"Print",name:"Tarpaulin / Billboard Ready",blurb:"Subject on one side, big clean space for text and logos.",best:"Best at 4:5 or 16:9",at:"polo",
+   scene:"a smooth soft-gradient background in a single solid color (or the color given in the extra details), with a large empty negative space on the left half reserved for text and logos",
+   pose:"subject placed on the right third of the frame, confident open stance, friendly smile",
+   light:"clean commercial lighting, crisp edges for easy cut-out; 85mm lens, f/4"},
+  {id:"print-cover",cat:"Print",name:"Facebook Cover Banner",blurb:"Wide layout, subject on the right with space to spare.",best:"Best at 16:9",at:"polo",
+   scene:"a softly blurred modern subdivision streetscape, with the left 60% of the frame kept uncluttered and low-detail for headline text",
+   pose:"subject on the right side of the frame, confident smile",
+   light:"soft daylight, clean and bright; 50mm lens, f/2.8"},
+  {id:"team-group",cat:"Print",name:"Team Group Shot",blurb:"Whole team together. Attach all the reference photos.",group:true,at:"polo",
+   scene:"the bright lobby or front yard of a model house, clean and welcoming",
+   pose:"the team standing together in a natural staggered group, shoulders slightly overlapping, everyone smiling, taller people toward the back",
+   light:"even soft daylight so every face is well lit; 35mm lens, f/4, all faces sharp"}
+];
+
+const $ = s => document.querySelector(s);
+let selected = new Set(["board-cross","board-hand","board-lean"]);
+let filter = "All";
+
+$("#frame").innerHTML = FRAMES.map(f=>`<option value="${f.id}">${f.name}</option>`).join("");
+$("#role").innerHTML = Object.keys(ROLES).map(k=>`<option value="${k}">${ROLES[k].name}</option>`).join("");
+function populateAttire(){
+  const role=$("#role").value, prev=$("#attire").value;
+  const list = role==="leader"?ATTIRE_LEADER:ATTIRE_TEAM;
+  $("#attire").innerHTML = list.map(a=>`<option value="${a.id}">${a.name}</option>`).join("");
+  if(list.some(a=>a.id===prev)) $("#attire").value=prev;
+  $("#attireLbl").textContent = role==="leader" ? "Upper garment (laging royal blue polo)" : "Upper garment (laging red)";
+  $("#attireHint").textContent = role==="leader" ? '"Best for style" = royal blue polo, may blazer kung bagay sa estilo.' : '"Best for style" = ang bagay na red top per estilo.';
+}
+populateAttire();
+function fillOutfit(role,bSel,sSel){
+  const O=OUTFITS[role];
+  $(bSel).innerHTML = '<option value="auto">Auto (best for style)</option>' + ["Pants","Shorts"].map(g=>`<optgroup label="${g}">`+O.bottoms.filter(b=>b.g===g).map(b=>`<option value="${b.id}">${b.name}</option>`).join("")+"</optgroup>").join("");
+  $(sSel).innerHTML = '<option value="auto">Auto (matched to pants/shorts)</option>' + O.shoes.map(x=>`<option value="${x.id}">${x.name}</option>`).join("");
+}
+fillOutfit("leader","#bottomsL","#shoesL");
+fillOutfit("team","#bottomsT","#shoesT");
+function syncOutfitUI(){
+  const role=$("#role").value;
+  const grp=[...selected].some(id=>STYLES.find(x=>x.id===id).group);
+  $("#fsLeader").classList.toggle("off", role!=="leader");
+  $("#fsTeam").classList.toggle("off", !(role==="team"||grp));
+  [["leader","#bottomsL","#hintL"],["team","#bottomsT","#hintT"]].forEach(([r,bs,h])=>{
+    const v=$(bs).value;
+    $(h).textContent = v==="auto" ? OUTFITS[r].auto : "Bagay dito: "+OUTFITS[r].pairs[v]+".";
+  });
+}
+$("#blazerColor").innerHTML = BLAZERS.map(b=>`<option value="${b.id}">${b.name}</option>`).join("");
+$("#ratio").innerHTML = RATIOS.map(r=>`<option value="${r.id}">${r.name}</option>`).join("");
+
+const CATS = ["All","Board","Studio","Model","Site","Lifestyle","Editorial","Print"];
+const CATLABEL = {All:"All",Board:"Board & banner",Studio:"Studio",Model:"Model house",Site:"On-site",Lifestyle:"Lifestyle",Editorial:"Editorial",Print:"Print & group"};
+$("#filters").innerHTML = CATS.map(c=>`<button class="chip" data-cat="${c}" aria-pressed="${c==="All"}">${CATLABEL[c]}</button>`).join("");
+
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function renderGrid(){
+  const list = STYLES.filter(s=>filter==="All"||s.cat===filter);
+  $("#grid").innerHTML = list.map(s=>`
+    <button class="style c-${s.cat}" data-id="${s.id}" aria-pressed="${selected.has(s.id)}">
+      <h3>${esc(s.name)}</h3>
+      <p>${esc(s.blurb)}</p>
+      ${s.best?`<span class="best">${esc(s.best)}</span>`:""}
+    </button>`).join("");
+  $("#count").textContent = `${selected.size} of ${STYLES.length} styles selected`;
+}
+
+function attireText(type){
+  const R = ROLES[$("#role").value];
+  const b = BLAZERS.find(x=>x.id===$("#blazerColor").value);
+  const blazer = b.auto ? `a tailored blazer ${R.blazerAuto}, worn open` : `a tailored ${b.text} blazer worn open`;
+  if($("#role").value==="leader"){
+    return type==="blazer" ? `${LEADER_POLO}, underneath ${blazer}` : LEADER_POLO;
+  }
+  const map = {
+    polo:"a well-fitted, wrinkle-free solid red polo shirt",
+    tee:"a well-fitted solid red crew-neck t-shirt",
+    long:"a solid red long-sleeve shirt, neatly fitted, cuffs slightly rolled",
+    blazer:`a solid red shirt underneath ${blazer}`
+  };
+  return map[type];
+}
+
+function outfitFor(role,s){
+  const O=OUTFITS[role];
+  const isL = role==="leader";
+  const bsel=$(isL?"#bottomsL":"#bottomsT").value, ssel=$(isL?"#shoesL":"#shoesT").value;
+  let bid=bsel, forced=null;
+  if(bid==="auto"){
+    const outdoor = s.cat==="Site"||s.cat==="Board";
+    if(isL) bid = outdoor ? "khaki" : "charcoal";
+    else {
+      bid = outdoor ? "black" : "charcoal";
+      if(s.id==="life-desk"||s.id==="life-signing"){ bid="black"; forced="loafers"; }
+    }
+  }
+  const b=O.bottoms.find(x=>x.id===bid);
+  const sid = ssel==="auto" ? (forced||b.shoe) : ssel;
+  const shoe=O.shoes.find(x=>x.id===sid);
+  return `${b.text}, with ${shoe.text}`;
+}
+
+function signText(s){
+  const k = SIGNS[s.sign];
+  const txt = $("#signText").value.trim().replace(/\n+/g," / ");
+  let d = k.d;
+  d += txt
+    ? `. The ${k.noun} reads exactly: "${txt}". Spell every word exactly as written and add no other words`
+    : `. Keep the ${k.noun} panels clean and blank, with only a simple house-and-trees icon, so text can be added later`;
+  d += `. If a separate reference image of the ${k.noun} is attached, reproduce it exactly`;
+  return d;
+}
+
+function buildPrompt(s){
+  const role = $("#role").value, R = ROLES[role];
+  const f = FRAMES.find(x=>x.id===$("#frame").value);
+  const sel = $("#attire").value;
+  const type = sel==="auto" ? s.at : sel;
+  const attire = attireText(type);
+  const ratio = $("#ratio").value;
+  const notes = $("#notes").value.trim();
+  const who = s.group ? "the people" : "the person";
+  const identity = s.group
+    ? "Using the attached reference photos, create a professional real estate team photo featuring every person from the references."
+    : "Using the attached reference photo, create a professional real estate agent portrait of the same person.";
+  const lock = `Keep each face, facial structure, skin tone, hairstyle and natural features exactly as in the reference photo${s.group?"s":""}. Do not beautify, slim, age, or change ${who}'s identity. Only change the scene, clothing and lighting as described below.`;
+
+  let scene = s.scene;
+  if(s.sign) scene = scene.replace("{SIGN}", signText(s));
+  let light = s.light;
+  if(f.id==="full") light = light.replace("85mm lens","50mm lens");
+
+  let attireLine, avoid;
+  if(s.group && role==="leader"){
+    attireLine = `the team leader (the first reference photo) stands at the center in ${attireText("polo")}; every other team member wears a well-fitted, wrinkle-free solid red polo shirt. The leader's shirt is always royal blue and everyone else's shirt is always solid red, never any other color.`;
+    avoid = "any color other than royal blue for the leader's shirt or red for everyone else's shirt";
+  } else {
+    attireLine = `${attire}. The shirt or top worn closest to the body must always be ${R.rule}, never any other color.` + (role==="leader" ? " If a separate reference image of the polo shirt is attached, copy its design exactly." : "");
+    avoid = `any color other than ${R.avoid} for the shirt, polo or top`;
+  }
+  let bs;
+  if(s.group) bs = role==="leader" ? `the leader wears ${outfitFor("leader",s)}; everyone else wears ${outfitFor("team",s)}` : `everyone wears ${outfitFor("team",s)}`;
+  else bs = outfitFor(role,s);
+  const bsLine = bs + (f.id==="half" ? " (only the parts inside the frame will be visible)" : "");
+
+  const lines = [
+    identity,
+    "",
+    `IDENTITY: ${lock}`,
+    `SCENE: ${scene}.`,
+    `FRAMING: ${f.text}.`,
+    `POSE & EXPRESSION: ${s.pose}.`,
+    `ATTIRE: ${attireLine}`,
+    `BOTTOMS & SHOES: ${bsLine}.`,
+    `LIGHTING & CAMERA: ${light}.`
+  ];
+  if($("#space").checked) lines.push("COMPOSITION: keep the bottom 10% of the frame and the top-right corner free of important details so a footer bar and logo can be added later, while the sign, hands and feet stay fully visible above that area.");
+  if(notes) lines.push(`EXTRA DETAILS: ${notes}.`);
+  lines.push(`FORMAT: ${ratio} aspect ratio, photorealistic professional photograph, high resolution, natural skin texture, realistic hands with correct fingers.`);
+  lines.push(`AVOID: changed facial features, ${avoid}, plastic or over-smoothed skin, distorted hands, watermarks, unwanted text or logos, cartoon or illustrated look${s.group?"":", extra people"}.`);
+  return lines.join("\n");
+}
+
+function renderResults(){
+  syncOutfitUI();
+  const items = STYLES.filter(s=>selected.has(s.id));
+  if(!items.length){
+    $("#results").innerHTML = `<div class="empty">Wala pang napiling estilo. Mag-tap ng kahit isang style sa taas para lumabas ang prompt.</div>`;
+    return;
+  }
+  $("#results").innerHTML = items.map(s=>{
+    const p = buildPrompt(s);
+    const html = esc(p).replace(/^(IDENTITY|SCENE|FRAMING|POSE &amp; EXPRESSION|ATTIRE|BOTTOMS &amp; SHOES|LIGHTING &amp; CAMERA|COMPOSITION|EXTRA DETAILS|FORMAT|AVOID):/gm,"<b>$1:</b>");
+    return `<article class="result" style="margin-bottom:14px">
+      <header><strong>${esc(s.name)}</strong><button class="btn" data-copy="${s.id}">Copy prompt</button></header>
+      <pre>${html}</pre></article>`;
+  }).join("");
+}
+function refresh(){ renderGrid(); renderResults(); }
+
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),1600);
+}
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{document.execCommand("copy")}catch(_){}
+    ta.remove();
+  }
+  toast("Copied");
+}
+
+$("#filters").addEventListener("click",e=>{
+  const b=e.target.closest("[data-cat]"); if(!b) return;
+  filter=b.dataset.cat;
+  document.querySelectorAll("#filters .chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.cat===filter));
+  renderGrid();
+});
+$("#grid").addEventListener("click",e=>{
+  const b=e.target.closest("[data-id]"); if(!b) return;
+  const id=b.dataset.id;
+  selected.has(id)?selected.delete(id):selected.add(id);
+  renderGrid(); renderResults();
+});
+$("#selVisible").addEventListener("click",()=>{
+  STYLES.filter(s=>filter==="All"||s.cat===filter).forEach(s=>selected.add(s.id));
+  renderGrid(); renderResults();
+});
+$("#clearAll").addEventListener("click",()=>{ selected.clear(); renderGrid(); renderResults(); });
+$("#results").addEventListener("click",e=>{
+  const b=e.target.closest("[data-copy]"); if(!b) return;
+  const s=STYLES.find(x=>x.id===b.dataset.copy);
+  copyText(buildPrompt(s));
+});
+$("#copyAll").addEventListener("click",()=>{
+  const items=STYLES.filter(s=>selected.has(s.id));
+  if(!items.length){toast("Walang napiling style");return;}
+  copyText(items.map(s=>`=== ${s.name} ===\n${buildPrompt(s)}`).join("\n\n"));
+});
+$("#role").addEventListener("change",()=>{ populateAttire(); refresh(); });
+["role","frame","attire","blazerColor","bottomsL","shoesL","bottomsT","shoesT","ratio","signText","notes","space"].forEach(id=>{
+  $("#"+id).addEventListener("input",refresh);
+  $("#"+id).addEventListener("change",refresh);
+});
+refresh();
+</script>
+</body>
+</html>
